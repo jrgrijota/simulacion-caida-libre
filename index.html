@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caída Libre y Tiro Parabólico — Simulación Interactiva</title>
+    <!-- Página pública de esta simulación: simulaciencia.es. Esta dirección (github.io) es la que carga la web dentro de un iframe; la canónica evita que los buscadores la indexen como página aparte. -->
+    <meta name="description" content="Lanza objetos en caída libre, en tiro vertical, horizontal y oblicuo, con estela estroboscópica y vectores velocidad y aceleración, y quita o pon el aire para ver qué cambia.">
+    <link rel="canonical" id="canonical" href="https://simulaciencia.es/simulaciones/caida-libre/">
+    <script>(function(){var d={"en":"en/simulations/","ca":"ca/simulacions/","eu":"eu/simulazioak/","gl":"gl/simulacions/"}[new URLSearchParams(location.search).get('lang')];if(d)document.getElementById('canonical').href='https://simulaciencia.es/'+d+'caida-libre/';})();</script>
+    <script src="js/i18n-en.js"></script>
+    <script src="js/i18n-ca.js"></script>
+    <script src="js/i18n-eu.js"></script>
+    <script src="js/i18n-gl.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/vendor/p5.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="js/estadisticas.js" data-sim="sim-caida-libre"></script>
+    <script src="js/sello.js" data-contenedor="main.simulation-panel" data-esquina="bl"></script>
+</head>
+<body class="mode-vertical">
+    <div class="app-container">
+
+        <!-- ── PANEL DE CONTROL ──────────────────────────────────── -->
+        <aside class="control-panel">
+
+            <header>
+                <div class="header-top">
+                    <svg class="header-icon-svg" width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <!-- Suelo y plataforma -->
+                        <rect x="2" y="37" width="38" height="2.4" rx="1.2" fill="#585858"/>
+                        <rect x="3" y="20" width="7" height="17" rx="1.2" fill="#22303c" stroke="#4a5868" stroke-width="1.2"/>
+                        <!-- Estela estroboscópica (parábola) -->
+                        <circle cx="13" cy="17.2" r="1.5" fill="#00c8ff" opacity="0.45"/>
+                        <circle cx="18" cy="13.6" r="1.5" fill="#00c8ff" opacity="0.55"/>
+                        <circle cx="23" cy="12.4" r="1.5" fill="#00c8ff" opacity="0.65"/>
+                        <circle cx="28" cy="13.6" r="1.5" fill="#00c8ff" opacity="0.75"/>
+                        <circle cx="33" cy="17.2" r="1.5" fill="#00c8ff" opacity="0.85"/>
+                        <!-- Objeto -->
+                        <circle cx="37" cy="23.2" r="3.4" fill="#00c8ff"/>
+                        <!-- Aceleración: siempre hacia abajo -->
+                        <path d="M37 27.5 L37 33" stroke="#ff9a4a" stroke-width="1.8" stroke-linecap="round"/>
+                        <path d="M34.8 31.2 L37 34.6 L39.2 31.2" fill="none" stroke="#ff9a4a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <h1>Caída Libre y Tiro Parabólico</h1>
+                </div>
+                <p class="subtitle">Caída libre · Tiro vertical · Tiro parabólico</p>
+                <details class="header-details">
+                    <summary>¿Qué tienen en común?</summary>
+                    <div class="header-details-body">
+                        <p class="section-note" data-i18n="intro">
+                            Todo lo que se lanza cerca del suelo, sin aire, se mueve con la <strong>misma aceleración</strong>:
+                            la de la gravedad, <i>g</i>, siempre hacia abajo. La caída libre, el tiro vertical y el tiro
+                            parabólico son el mismo movimiento: solo cambian la altura y la velocidad con que empiezan.
+                        </p>
+                        <div class="quick-rule">
+                            <span class="qr-x" data-i18n="qr-x">En horizontal → velocidad constante (MRU)</span>
+                            <span class="qr-y" data-i18n="qr-y">En vertical → aceleración <i>g</i> hacia abajo (MRUA)</span>
+                        </div>
+                    </div>
+                </details>
+            </header>
+
+            <hr class="divider">
+
+            <!-- SELECTOR DE MODO -->
+            <div class="mode-switch mode-switch-3" role="tablist">
+                <button id="mode-vertical" type="button" class="mode-btn active" role="tab" aria-selected="true">
+                    Vertical
+                    <span class="mode-sub">caída libre y tiro vertical</span>
+                </button>
+                <button id="mode-parab" type="button" class="mode-btn" role="tab" aria-selected="false">
+                    Parabólico
+                    <span class="mode-sub">tiro horizontal y oblicuo</span>
+                </button>
+                <button id="mode-reto" type="button" class="mode-btn" role="tab" aria-selected="false">
+                    Reto
+                    <span class="mode-sub">calcula y acierta</span>
+                </button>
+            </div>
+
+            <hr class="divider">
+
+            <!-- ═══ LANZAMIENTO: MODO VERTICAL ═══ -->
+            <section class="control-group only-vertical">
+                <h2>Lanzamiento</h2>
+                <div class="preset-grid preset-grid-3" id="ejemplos-vertical">
+                    <button type="button" class="preset-btn" data-h="45" data-v="0">Caída libre<small>45 m · 0 m/s</small></button>
+                    <button type="button" class="preset-btn" data-h="0" data-v="20">Lanzar hacia arriba<small>0 m · 20 m/s ↑</small></button>
+                    <button type="button" class="preset-btn" data-h="30" data-v="-10">Lanzar hacia abajo<small>30 m · 10 m/s ↓</small></button>
+                </div>
+                <div class="input-wrapper">
+                    <div class="label-container">
+                        <label for="slider-h-vert">Altura inicial <span class="label-hint">(h₀)</span></label>
+                        <span id="val-h-vert" class="value-badge">45 m</span>
+                    </div>
+                    <input type="range" id="slider-h-vert" min="0" max="100" value="45" step="1">
+                    <div class="slider-bounds"><span>0 m</span><span>100 m</span></div>
+                </div>
+                <div class="input-wrapper">
+                    <div class="label-container">
+                        <label for="slider-v-vert">Velocidad inicial <span class="label-hint">(v₀)</span></label>
+                        <span id="val-v-vert" class="value-badge">0 m/s · soltar</span>
+                    </div>
+                    <input type="range" id="slider-v-vert" class="center-slider" min="-30" max="30" value="0" step="0.5">
+                    <div class="slider-bounds three"><span>↓ 30 m/s</span><span>soltar</span><span>30 m/s ↑</span></div>
+                </div>
+            </section>
+
+            <!-- ═══ LANZAMIENTO: MODO PARABÓLICO ═══ -->
+            <section class="control-group only-parab">
+                <h2>Lanzamiento</h2>
+                <div class="preset-grid preset-grid-3" id="ejemplos-parab">
+                    <button type="button" class="preset-btn" data-h="20" data-v="10" data-a="0">Tiro horizontal<small>20 m · 10 m/s · 0°</small></button>
+                    <button type="button" class="preset-btn" data-h="0" data-v="20" data-a="45">Desde el suelo<small>0 m · 20 m/s · 45°</small></button>
+                    <button type="button" class="preset-btn" data-h="20" data-v="15" data-a="30">Desde una azotea<small>20 m · 15 m/s · 30°</small></button>
+                </div>
+                <div class="input-wrapper">
+                    <div class="label-container">
+                        <label for="slider-h-parab">Altura inicial <span class="label-hint">(h₀)</span></label>
+                        <span id="val-h-parab" class="value-badge">20 m</span>
+                    </div>
+                    <input type="range" id="slider-h-parab" min="0" max="50" value="20" step="1">
+                    <div class="slider-bounds"><span>0 m</span><span>50 m</span></div>
+                </div>
+                <div class="input-wrapper">
+                    <div class="label-container">
+                        <label for="slider-v-parab">Rapidez inicial <span class="label-hint">(v₀)</span></label>
+                        <span id="val-v-parab" class="value-badge">15 m/s</span>
+                    </div>
+                    <input type="range" id="slider-v-parab" min="0" max="30" value="15" step="0.5">
+                    <div class="slider-bounds"><span>0 m/s</span><span>30 m/s</span></div>
+                </div>
+                <div class="input-wrapper">
+                    <div class="label-container">
+                        <label for="slider-a-parab">Ángulo de lanzamiento <span class="label-hint">(α, sobre la horizontal)</span></label>
+                        <span id="val-a-parab" class="value-badge">30°</span>
+                    </div>
+                    <input type="range" id="slider-a-parab" min="-30" max="90" value="30" step="1">
+                    <div class="slider-bounds"><span>−30° (hacia abajo)</span><span>90° (vertical)</span></div>
+                </div>
+            </section>
+
+            <!-- ═══ RETO ═══ -->
+            <section class="control-group only-reto">
+                <h2>Elige un reto</h2>
+                <div class="preset-grid" id="retos" role="radiogroup" aria-label="Tipo de reto">
+                    <button type="button" class="preset-btn" data-reto="balcon" role="radio" aria-checked="false">Hasta el balcón<small>tiro vertical · 4.º ESO</small></button>
+                    <button type="button" class="preset-btn" data-reto="tarda" role="radio" aria-checked="false">¿Cuánto tarda?<small>caída libre · 4.º ESO</small></button>
+                    <button type="button" class="preset-btn" data-reto="diana" role="radio" aria-checked="false">A la diana<small>tiro horizontal · Bach.</small></button>
+                    <button type="button" class="preset-btn" data-reto="angulos" role="radio" aria-checked="false">Dos ángulos<small>tiro oblicuo · Bach.</small></button>
+                </div>
+                <div class="card reto-card">
+                    <h3>Enunciado</h3>
+                    <p id="reto-enunciado" class="reto-texto"></p>
+                    <p class="field-hint" data-i18n="reto-nota">En la Tierra (<i>g</i> = 9,8 m/s²) y sin aire. Calcula en tu cuaderno y escribe el resultado.</p>
+                    <div class="reto-respuesta">
+                        <label for="reto-input" id="reto-pregunta">Tu respuesta</label>
+                        <div class="reto-fila">
+                            <input type="text" id="reto-input" inputmode="decimal" autocomplete="off" class="reto-input">
+                            <span id="reto-unidad" class="reto-unidad">m/s</span>
+                            <button type="button" id="reto-lanzar" class="action-btn">Comprobar</button>
+                        </div>
+                    </div>
+                    <p id="reto-feedback" class="reto-feedback" aria-live="polite"></p>
+                    <p id="reto-pista" class="reto-pista"></p>
+                    <button type="button" id="reto-nuevo" class="action-btn secondary">Nuevo reto</button>
+                </div>
+            </section>
+
+            <hr class="divider no-reto">
+
+            <!-- ═══ QUÉ SE LANZA Y DÓNDE ═══ -->
+            <section class="control-group no-reto">
+                <h2>Qué se lanza y dónde</h2>
+                <div class="input-wrapper">
+                    <label for="select-objeto">Objeto</label>
+                    <select id="select-objeto" class="custom-select"></select>
+                </div>
+                <div class="input-wrapper">
+                    <label for="select-lugar">Lugar</label>
+                    <select id="select-lugar" class="custom-select"></select>
+                </div>
+                <label class="check-row" for="check-aire">
+                    <input type="checkbox" id="check-aire">
+                    <span>Con aire</span>
+                </label>
+                <p id="aire-hint" class="field-hint">Con aire: el rozamiento frena a cada objeto de forma distinta.</p>
+                <label class="check-row only-vertical" for="check-comparar">
+                    <input type="checkbox" id="check-comparar">
+                    <span>Comparar con otro objeto <span class="label-hint">(se sueltan a la vez)</span></span>
+                </label>
+                <div class="input-wrapper only-vertical" id="wrap-objeto2" hidden>
+                    <label for="select-objeto2">Otro objeto</label>
+                    <select id="select-objeto2" class="custom-select"></select>
+                </div>
+                <label class="check-row only-parab" for="check-soltar">
+                    <input type="checkbox" id="check-soltar">
+                    <span>Soltar otra bola a la vez <span class="label-hint">(desde la misma altura)</span></span>
+                </label>
+                <label class="check-row only-parab" for="check-conservar">
+                    <input type="checkbox" id="check-conservar">
+                    <span>Conservar trayectorias anteriores <span class="label-hint">(hasta 5)</span></span>
+                </label>
+            </section>
+
+            <hr class="divider">
+
+            <!-- MÉTRICAS -->
+            <details class="custom-details" open>
+                <summary>Datos del movimiento</summary>
+                <div class="details-content metrics-content">
+                    <p class="metrics-caption">En este instante</p>
+                    <div class="metrics-grid">
+                        <div class="card card-data">
+                            <h3>Tiempo</h3>
+                            <div class="metric"><span id="m-t">0,00</span> <small>s</small></div>
+                        </div>
+                        <div class="card card-data only-parab-reto">
+                            <h3>Posición x</h3>
+                            <div class="metric"><span id="m-x">0,0</span> <small>m</small></div>
+                        </div>
+                        <div class="card card-data">
+                            <h3>Altura y</h3>
+                            <div class="metric"><span id="m-y">0,0</span> <small>m</small></div>
+                        </div>
+                        <div class="card card-data only-parab-reto">
+                            <h3>Velocidad vₓ</h3>
+                            <div class="metric"><span id="m-vx">0,0</span> <small>m/s</small></div>
+                        </div>
+                        <div class="card card-data">
+                            <h3><span id="h-vy">Velocidad vᵧ</span> <span id="m-vy-dir" class="dir"></span></h3>
+                            <div class="metric"><span id="m-vy">0,0</span> <small>m/s</small></div>
+                        </div>
+                        <div class="card card-data only-parab-reto">
+                            <h3>Rapidez |v|</h3>
+                            <div class="metric"><span id="m-v">0,0</span> <small>m/s</small></div>
+                        </div>
+                    </div>
+                    <div class="card card-estado no-reto" id="card-resultados">
+                        <h3>Resultados del lanzamiento</h3>
+                        <dl class="resultados">
+                            <div><dt>Tiempo de vuelo</dt><dd><span id="r-t">—</span></dd></div>
+                            <div><dt>Altura máxima</dt><dd><span id="r-h">—</span></dd></div>
+                            <div class="only-parab"><dt>Alcance</dt><dd><span id="r-x">—</span></dd></div>
+                            <div><dt>Velocidad al llegar</dt><dd><span id="r-v">—</span></dd></div>
+                        </dl>
+                        <p id="r-otro" class="resultado-otro" hidden></p>
+                    </div>
+                </div>
+            </details>
+
+            <!-- QUÉ SE VE -->
+            <section class="control-group">
+                <h2>Qué se ve</h2>
+                <label class="check-row" for="check-vectores">
+                    <input type="checkbox" id="check-vectores" checked>
+                    <span>Vectores velocidad y aceleración</span>
+                </label>
+                <label class="check-row only-parab-reto" for="check-proyecciones">
+                    <input type="checkbox" id="check-proyecciones">
+                    <span>Proyecciones sobre los ejes <span class="label-hint">(dos «sombras»)</span></span>
+                </label>
+                <div class="input-wrapper">
+                    <span class="seg-label" id="lbl-estela">Estela: un punto cada</span>
+                    <div class="seg-control" role="radiogroup" aria-labelledby="lbl-estela">
+                        <button type="button" class="seg-btn" data-estela="0.1" role="radio" aria-checked="false">0,1 s</button>
+                        <button type="button" class="seg-btn active" data-estela="0.2" role="radio" aria-checked="true">0,2 s</button>
+                        <button type="button" class="seg-btn" data-estela="0.5" role="radio" aria-checked="false">0,5 s</button>
+                    </div>
+                </div>
+                <label class="check-row" for="check-pausa-cima">
+                    <input type="checkbox" id="check-pausa-cima">
+                    <span>Pausar en la altura máxima</span>
+                </label>
+                <label class="check-row no-reto" for="check-ocultar">
+                    <input type="checkbox" id="check-ocultar">
+                    <span>Ocultar resultados <span class="label-hint">(para calcularlos antes)</span></span>
+                </label>
+            </section>
+
+            <hr class="divider no-reto">
+
+            <!-- ECUACIONES -->
+            <details class="custom-details no-reto">
+                <summary>Ecuaciones del movimiento</summary>
+                <div class="details-content">
+                    <div class="card edu-card">
+                        <div class="formula-list" id="ecuaciones"></div>
+                    </div>
+                    <p id="ecuaciones-nota" class="field-hint"></p>
+                </div>
+            </details>
+
+            <!-- IDEAS CLAVE -->
+            <details class="custom-details">
+                <summary>Ideas clave</summary>
+                <div class="details-content">
+                    <ul class="key-ideas">
+                        <li data-i18n="idea-masa">Sin aire, <strong>todos los objetos caen igual</strong>, pesen lo que pesen: una pluma y una bola de acero llegan a la vez.</li>
+                        <li data-i18n="idea-g">La aceleración es siempre <strong><i>g</i> hacia abajo</strong>, también cuando el objeto sube y en el punto más alto.</li>
+                        <li data-i18n="idea-cima">En el punto más alto, la velocidad <strong>vertical</strong> es cero; la horizontal sigue igual. Solo en el tiro vertical se para del todo, durante un instante.</li>
+                        <li data-i18n="idea-indep">El movimiento horizontal y el vertical son <strong>independientes</strong>: una bola lanzada en horizontal y otra soltada a la vez llegan juntas al suelo.</li>
+                        <li data-i18n="idea-aire">El aire frena más a los objetos ligeros y grandes. Con aire, la trayectoria <strong>ya no es una parábola</strong>.</li>
+                    </ul>
+                </div>
+            </details>
+
+        </aside>
+
+        <!-- ── PANEL DE SIMULACIÓN ───────────────────────────────── -->
+        <main class="simulation-panel">
+
+            <div class="sim-dock">
+                <div class="dock-group">
+                    <button id="btn-lanzar" type="button" class="canvas-btn btn-primary" aria-keyshortcuts="Space" title="Lanzar, pausar o reanudar (barra espaciadora)"><svg id="ico-play" class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg><svg id="ico-pausa" class="ico" viewBox="0 0 16 16" aria-hidden="true" style="display:none"><rect x="3" y="2.5" width="3.6" height="11" rx="1"/><rect x="9.4" y="2.5" width="3.6" height="11" rx="1"/></svg><span id="btn-lanzar-txt" class="btn-txt">Lanzar</span></button>
+                    <button id="btn-reiniciar" type="button" class="canvas-btn" aria-keyshortcuts="R" title="Volver al principio (tecla R)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5a5.5 5.5 0 1 1-5.2 3.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M1.6 2.2l1.5 4.3 4.2-1.6z"/></svg><span class="btn-txt">Reiniciar</span></button>
+                </div>
+                <div class="dock-group">
+                    <span class="dock-label" id="lbl-velocidad">Velocidad</span>
+                    <div class="dock-seg" role="radiogroup" aria-labelledby="lbl-velocidad">
+                        <button type="button" class="dock-seg-btn" data-speed="0.25" role="radio" aria-checked="false" aria-label="Velocidad ×0,25">×0,25</button>
+                        <button type="button" class="dock-seg-btn" data-speed="0.5" role="radio" aria-checked="false" aria-label="Velocidad ×0,5">×0,5</button>
+                        <button type="button" class="dock-seg-btn active" data-speed="1" role="radio" aria-checked="true" aria-label="Velocidad ×1">×1</button>
+                    </div>
+                </div>
+                <div class="dock-group">
+                    <button id="btn-graficas" type="button" class="canvas-btn" aria-pressed="false"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 1.5v12.5h12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 12 Q7 1 13 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="btn-txt">Gráficas</span></button>
+                </div>
+                <div class="dock-row instante-row">
+                    <label for="slider-instante" class="dock-label">Instante</label>
+                    <button type="button" id="btn-menos" class="step-btn" aria-label="Retroceder un punto de la estela" title="Retroceder un punto de la estela">−</button>
+                    <input type="range" id="slider-instante" min="0" max="1000" value="0" step="1" disabled>
+                    <button type="button" id="btn-mas" class="step-btn" aria-label="Avanzar un punto de la estela" title="Avanzar un punto de la estela">+</button>
+                    <span id="val-instante" class="value-badge">0,00 s</span>
+                </div>
+            </div>
+            <p class="girar-movil">Gira el móvil para ver la simulación más grande.</p>
+
+            <!-- Botón de tema -->
+            <button id="theme-btn" class="theme-btn" title="Cambiar tema" aria-label="Cambiar tema" aria-expanded="false">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58
+                    c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96
+                    c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84
+                    c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33
+                    c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58
+                    C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61
+                    l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94
+                    l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54
+                    c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32
+                    c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z
+                    M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </svg>
+            </button>
+            <div id="theme-panel" class="theme-panel" aria-hidden="true">
+                <p class="theme-panel-title">Tema visual</p>
+                <div class="theme-options">
+                    <button class="theme-opt" data-theme="marca">
+                        <span class="theme-swatch marca-swatch"></span>SimulaCiencia
+                    </button>
+                    <button class="theme-opt active" data-theme="dark">
+                        <span class="theme-swatch dark-swatch"></span>Oscuro
+                    </button>
+                    <button class="theme-opt" data-theme="light">
+                        <span class="theme-swatch light-swatch"></span>Claro
+                    </button>
+                    <button class="theme-opt" data-theme="contrast">
+                        <span class="theme-swatch contrast-swatch"></span>Alto contraste
+                    </button>
+                </div>
+            </div>
+
+            <div id="canvas-container"></div>
+            <div id="anuncio" class="sr-only" aria-live="polite"></div>
+        </main>
+
+    </div>
+    <script src="js/parametros.js"></script>
+    <script src="js/fisica.js"></script>
+    <script src="js/escena.js"></script>
+    <script src="js/reto.js"></script>
+    <script src="js/sketch.js"></script>
+</body>
+</html>
